@@ -1,0 +1,24 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.container {
+    margin-top: 50px;
+}
+
+h1 {
+    color: #343a40;
+}
+
+.btn {
+    margin-right: 10px;
+}
+
+.form-group label {
+    font-weight: bold;
+}
+
+.form-control {
+    margin-bottom: 10px;
+}
