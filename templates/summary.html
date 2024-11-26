@@ -1,21 +1,17 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Summary</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Summary</h1>
-        <div class="mt-3">
-            <p><strong>Total Income:</strong> ${{ total_income }}</p>
-            <p><strong>Total Expenses:</strong> ${{ total_expenses }}</p>
-            <p><strong>Balance:</strong> ${{ balance }}</p>
-        </div>
-        <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Back to Home</a>
-    </div>
+    <h1>Transaction Summary</h1>
+    <p>Total Income: {{ total_income }}</p>
+    <p>Total Expenses: {{ total_expenses }}</p>
+    <p>Balance: {{ balance }}</p>
+
+    <a href="{{ url_for('index') }}">Back to Transactions</a>
 </body>
 </html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Welcome to Your Finance Dashboard</h1>
+
+    <h2>Add Transaction</h2>
+    <form method="POST">
+        <input type="text" name="category" placeholder="Category (e.g., Food, Rent)" required><br>
+        <input type="number" name="amount" placeholder="Amount" required><br>
+        <input type="radio" name="transaction_type" value="Income"> Income
+        <input type="radio" name="transaction_type" value="Expense"> Expense<br>
+        <button type="submit">Add Transaction</button>
+    </form>
+
+    <h2>Generate Report</h2>
+    <form method="POST" action="{{ url_for('generate_financial_report') }}">
+        <select name="report_period">
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+        </select>
+        <button type="submit">Generate Report</button>
+    </form>
+</body>
+</html>

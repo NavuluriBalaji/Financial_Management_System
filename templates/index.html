@@ -1,17 +1,35 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Budget Tracker</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Budget Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Welcome to Personal Budget Tracker</h1>
-        <a href="{{ url_for('add_transaction') }}" class="btn btn-primary mt-3">Add Transaction</a>
-        <a href="{{ url_for('summary') }}" class="btn btn-info mt-3">View Summary</a>
-    </div>
+    <h1>Budget Tracker</h1>
+    <a href="{{ url_for('add_transaction') }}">Add New Transaction</a>
+
+    <h2>Transaction Summary</h2>
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Description</th>
+        </tr>
+        {% for transaction in transactions %}
+        <tr>
+            <td>{{ transaction.date }}</td>
+            <td>{{ transaction.type }}</td>
+            <td>{{ transaction.category }}</td>
+            <td>{{ transaction.amount }}</td>
+            <td>{{ transaction.description }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="{{ url_for('summary') }}">View Summary</a>
 </body>
 </html>
