@@ -4,7 +4,7 @@ import os
 
 # Set up database connection
 def create_connection():
-    conn = sqlite3.connect(os.path.join('instance', 'finance_tracker.db'))
+    conn = sqlite3.connect(os.path.join('instance', 'budget_tracker.db'))
     return conn
 
 # Create tables for users and transactions

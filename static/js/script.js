@@ -40,3 +40,4 @@ function generateReport() {
     // Mock-up for report generation
     alert(`Generating ${period} report...`);
 }
+
