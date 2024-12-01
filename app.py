@@ -147,12 +147,48 @@ def add_transaction():
 
 
 # Summary route
+from flask import render_template
+from models import db, Transaction
+
 @app.route('/summary')
 def summary():
-    total_income = db.session.query(db.func.sum(Transaction.amount)).filter_by(type='Income').scalar() or 0
-    total_expenses = db.session.query(db.func.sum(Transaction.amount)).filter_by(type='Expense').scalar() or 0
-    balance = total_income - total_expenses
-    return render_template('summary.html', total_income=total_income, total_expenses=total_expenses, balance=balance)
+    # Fetch the sum of income and expenses by category
+    category_expenses = db.session.query(Transaction.category, db.func.sum(Transaction.amount).label('total_amount'))\
+        .filter(Transaction.type == 'Expense')\
+        .group_by(Transaction.category).all()
+
+    # Fetch the total income
+    total_income = db.session.query(db.func.sum(Transaction.amount).label('total_income'))\
+        .filter(Transaction.type == 'Income').scalar() or 0  # If no income, set it to 0
+
+    # Prepare the data for categories and their corresponding totals
+    categories = [expense.category for expense in category_expenses]
+    amounts = [expense.total_amount for expense in category_expenses]
+
+    # Prepare the data for pie chart (or any other chart)
+    chart_data = {
+        'labels': categories,
+        'datasets': [{
+            'label': 'Expenses',
+            'data': amounts,
+            'backgroundColor': ['#27ae60', '#3498db', '#f39c12', '#e74c3c', '#9b59b6'],
+            'borderColor': '#2c3e50',
+            'borderWidth': 1
+        }]
+    }
+
+    # Prepare the data for remaining budget and other calculations
+    total_expenses = sum(amounts)
+    remaining_budget = total_income - total_expenses
+
+    # Render the template with the data
+    return render_template('summary.html', 
+                           category_expenses=category_expenses,
+                           chart_data=chart_data,
+                           total_income=total_income,
+                           total_expenses=total_expenses,
+                           remaining_budget=remaining_budget)
+
 
 @app.route('/delete/<int:transaction_id>', methods=['POST'])
 def delete_transaction(transaction_id):
@@ -210,22 +246,37 @@ def login():
     
     return render_template('login.html')
 
-@app.route('/sign-up', methods=['GET', 'POST'])
+from flask import render_template, request, redirect, url_for
+from werkzeug.security import generate_password_hash
+from models import db, User  # Assuming you have a User model defined
+
+@app.route('/sign_up', methods=['GET', 'POST'])
 def sign_up():
     if request.method == 'POST':
+        # Get form data
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
         username = request.form['username']
+        email = request.form['email']
+        phone = request.form['phone']
+        company = request.form['company']
+        dob = request.form['dob']
         password = request.form['password']
         
-        # Hash the password before storing it
+        # Hash the password for security
         hashed_password = generate_password_hash(password)
 
-        new_user = User(username=username, password=hashed_password)
+        # Create a new user and store it in the database
+        new_user = User(first_name=first_name, last_name=last_name, username=username,
+                        email=email, phone=phone, company=company, dob=dob, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
 
-        return redirect(url_for('login'))
+        return redirect(url_for('login'))  # Redirect to login page after successful sign-up
 
     return render_template('sign_up.html')
+
+
 
 # Logout route
 @app.route('/logout')
