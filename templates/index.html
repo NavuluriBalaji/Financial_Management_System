@@ -17,9 +17,15 @@
 
         header {
             background: #2c3e50;
-            color: #fff;
-            padding: 15px 20px;
+            /* padding: 1px 1px; */
+            font-family: 'Arial', sans-serif;
             text-align: center;
+            display: flex;
+            justify-content: center;
+        }
+
+        h1 {
+            color: white;
         }
 
         nav {
@@ -66,7 +72,9 @@
 
         .table-container {
             max-width: 1200px;
-            margin: 50px auto;
+            width: 80vw;
+            margin: 50px auto 0px auto;
+            padding: 1rem;
             overflow-x: auto;
             background: #fff;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -164,20 +172,30 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .budget-section {
+            width: fit-content;
             margin-top: 30px;
             background: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-form {
+            width: 8000px;
         }
 
         .budget-input {
-            width: 100%;
-            padding: 10px;
+            /* width: 100%; */
+            padding: 1rem;
             margin-bottom: 15px;
             font-size: 16px;
             border: 1px solid #ccc;
@@ -198,6 +216,7 @@
             display: none;
         }
     </style>
+
 </head>
 <body>
     <header>
@@ -215,7 +234,6 @@
 
     <div class="container">
         <div class="welcome-message">
-            <h2>Welcome!</h2>
             <p>Here’s a quick overview of your spending and budget.</p>
         </div>
 
@@ -250,7 +268,7 @@
 
         <div class="budget-section">
             <h3>Set Your Monthly Salary and Budget Limits for Each Category</h3>
-            <form action="{{ url_for('set_category_budget') }}" method="POST">
+            <form action="{{ url_for('set_category_budget') }}" method="POST" class="input-form">
                 <label for="monthly_salary">Monthly Salary:</label>
                 <input type="number" name="monthly_salary" id="monthly_salary" class="budget-input" placeholder="Enter Monthly Salary" required><br>
         
@@ -275,7 +293,7 @@
 
         <div class="table-container">
             <h2 style="text-align: center; font-size: 24px; color: #2c3e50; margin-bottom: 20px;">Allocated Budget</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 16px; text-align: left; border-radius: 8px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 16px; text-align: left; border-radius: 8px; overflow: hidden;"  class="input-form">
                 <thead>
                     <tr style="background-color: #2c3e50; color: #ffffff; font-weight: bold;">
                         <th style="padding: 15px;">Category</th>
@@ -350,9 +368,9 @@
             <p><strong>Alert:</strong> You have exceeded your budget limit!</p>
         </div>
 
-        <div style="max-width: 1200px; margin: 50px auto; overflow-x: auto; background: #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); border-radius: 10px; padding: 20px;">
+        <div style="max-width: 1200px; margin: 50px auto; overflow-x: auto; background: #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); border-radius: 10px; padding: 20px;" class="table-container">
             <h2 style="text-align: center; font-size: 24px; color: #2c3e50; margin-bottom: 20px;">Transaction Summary</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 16px; text-align: left; border-radius: 8px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 16px; text-align: left; border-radius: 8px; overflow: hidden;"  class="input-form">
                 <thead>
                     <tr style="background-color: #2c3e50; color: #ffffff; font-weight: bold;">
                         <th style="padding: 15px;">Date</th>
