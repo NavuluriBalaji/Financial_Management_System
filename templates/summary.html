@@ -108,14 +108,15 @@
     </div>
 
     <script>
-        // Get the data for the chart dynamically from the Flask view
-        var expenseData = {{ chart_data | tojson }};
+        // Fetch chart data from Flask passed context
+        var chartData = {{ chart_data | tojson }};
+        var chartType = 'pie';  // Default chart type
 
-        // Chart Configuration
+        // Initialize the chart
         var ctx = document.getElementById('expenseChart').getContext('2d');
         var expenseChart = new Chart(ctx, {
-            type: 'pie',
-            data: expenseData,
+            type: chartType,
+            data: chartData['pie'],
             options: {
                 responsive: true,
                 plugins: {
@@ -130,12 +131,31 @@
                         }
                     }
                 }
-            });
+            }
+        });
 
-        // Display alert if budget exceeded (example condition)
-        if (true) { // Replace with actual condition (e.g., if expenses > budget)
-            document.getElementById('budgetAlert').style.display = 'block';
-        }
+        // Switch between Pie and Bar chart
+        document.getElementById('switchChartBtn').addEventListener('click', function() {
+            if (chartType === 'pie') {
+                chartType = 'bar';
+                expenseChart.data = chartData['bar'];
+                document.getElementById('switchChartBtn').textContent = 'Switch to Pie Chart';
+            } else {
+                chartType = 'pie';
+                expenseChart.data = chartData['pie'];
+                document.getElementById('switchChartBtn').textContent = 'Switch to Bar Chart';
+            }
+            expenseChart.update();
+        });
+
+        // Minimize/Expand the chart container
+        document.getElementById('minimizeChartBtn').addEventListener('click', function() {
+            var chartContainer = document.getElementById('chart-container');
+            chartContainer.classList.toggle('minimized');
+            var btnText = chartContainer.classList.contains('minimized') ? 'Maximize Chart' : 'Minimize Chart';
+            document.getElementById('minimizeChartBtn').textContent = btnText;
+        });
     </script>
+
 </body>
 </html>

@@ -102,8 +102,7 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-                /* Button to open calculator */
-                .open-calculator-btn {
+        .open-calculator-btn {
             background-color: #3498db;
             color: white;
             padding: 10px 20px;
@@ -117,14 +116,13 @@
             text-align: center;
         }
 
-        /* Calculator UI */
         .calculator-section {
             margin-top: 30px;
             background: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            display: none; /* Initially hidden */
+            display: none;
         }
 
         .calculator-screen {
@@ -215,14 +213,14 @@
 
     <div class="container">
         <div class="welcome-message">
-            <h2>Welcome, {{ session['user_name'] }}!</h2>
+            <h2>Welcome, {{ session.get('user_name') }}!</h2>
             <p>Here’s a quick overview of your spending and budget.</p>
         </div>
 
         <div class="container">
             <!-- Open Calculator Button -->
             <a href="javascript:void(0);" class="open-calculator-btn" id="openCalculatorBtn">Open General Calculator</a>
-    
+        
             <!-- Calculator Form (Initially hidden) -->
             <div class="calculator-section" id="calculatorForm">
                 <input type="text" id="calculatorScreen" class="calculator-screen" disabled placeholder="0">
@@ -243,6 +241,7 @@
                     <button class="calculator-button" onclick="clearScreen()">C</button>
                     <button class="calculator-button" onclick="calculateResult()">=</button>
                     <button class="calculator-button" onclick="appendToScreen('+')">+</button>
+                    <button class="calculator-button" onclick="appendToScreen('%')">%</button> <!-- Added % button -->
                 </div>
             </div>
         </div>
@@ -286,57 +285,65 @@
                     <!-- Monthly Salary Row -->
                     <tr style="background-color: #f9f9f9;">
                         <td style="padding: 15px;">Monthly Salary</td>
-                        <td style="padding: 15px;">₹{{ session['monthly_salary'] | float }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('monthly_salary', 0) }}</td>
                         <td style="padding: 15px;"></td>
                     </tr>
         
                     <!-- Food Budget Row -->
                     <tr style="background-color: #ffffff;">
                         <td style="padding: 15px;">Food</td>
-                        <td style="padding: 15px;">₹{{ session['user_budgets']['food'] | float }}</td>
-                        <td style="padding: 15px;">₹{{ session['monthly_salary'] | float - session['user_budgets']['food'] | float }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('user_budgets', {}).get('food', 0) }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('monthly_salary', 0) - session.get('user_budgets', {}).get('food', 0) }}</td>
                     </tr>
         
                     <!-- Transport Budget Row -->
                     <tr style="background-color: #f9f9f9;">
                         <td style="padding: 15px;">Transport</td>
-                        <td style="padding: 15px;">₹{{ session['user_budgets']['transport'] | float }}</td>
-                        <td style="padding: 15px;">₹{{ session['monthly_salary'] | float - session['user_budgets']['transport'] | float }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('user_budgets', {}).get('transport', 0) }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('monthly_salary', 0) - session.get('user_budgets', {}).get('transport', 0) }}</td>
                     </tr>
         
                     <!-- Entertainment Budget Row -->
                     <tr style="background-color: #ffffff;">
                         <td style="padding: 15px;">Entertainment</td>
-                        <td style="padding: 15px;">₹{{ session['user_budgets']['entertainment'] | float }}</td>
-                        <td style="padding: 15px;">₹{{ session['monthly_salary'] | float - session['user_budgets']['entertainment'] | float }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('user_budgets', {}).get('entertainment', 0) }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('monthly_salary', 0) - session.get('user_budgets', {}).get('entertainment', 0) }}</td>
                     </tr>
         
                     <!-- Bills Budget Row -->
                     <tr style="background-color: #f9f9f9;">
                         <td style="padding: 15px;">Bills</td>
-                        <td style="padding: 15px;">₹{{ session['user_budgets']['bills'] | float }}</td>
-                        <td style="padding: 15px;">₹{{ session['monthly_salary'] | float - session['user_budgets']['bills'] | float }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('user_budgets', {}).get('bills', 0) }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('monthly_salary', 0) - session.get('user_budgets', {}).get('bills', 0) }}</td>
                     </tr>
         
                     <!-- Others Budget Row -->
                     <tr style="background-color: #ffffff;">
                         <td style="padding: 15px;">Others</td>
-                        <td style="padding: 15px;">₹{{ session['user_budgets']['other'] | float }}</td>
-                        <td style="padding: 15px;">₹{{ session['monthly_salary'] | float - session['user_budgets']['other'] | float }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('user_budgets', {}).get('other', 0) }}</td>
+                        <td style="padding: 15px;">₹{{ session.get('monthly_salary', 0) - session.get('user_budgets', {}).get('other', 0) }}</td>
                     </tr>
         
                     <!-- Total Remaining Budget Row -->
                     <tr style="background-color: #f9f9f9;">
                         <td style="padding: 15px; font-weight: bold;">Total Remaining Budget</td>
+                        <td style="padding: 15px; font-weight: bold;">
+                            ₹{{ 
+                                (session.get('monthly_salary', 0) 
+                                - session.get('user_budgets', {}).get('food', 0) 
+                                - session.get('user_budgets', {}).get('transport', 0) 
+                                - session.get('user_budgets', {}).get('entertainment', 0) 
+                                - session.get('user_budgets', {}).get('bills', 0) 
+                                - session.get('user_budgets', {}).get('other', 0)) | float
+                            }}
+                        </td>
                         <td style="padding: 15px;"></td>
-                        <td style="padding: 15px; font-weight: bold;">₹{{ session['remaining_budget'] }}</td>
                     </tr>
+                    
                 </tbody>
             </table>
         </div>
-        
-        
-        
+
         <div class="notification" id="budget-notification">
             <p><strong>Alert:</strong> You have exceeded your budget limit!</p>
         </div>
@@ -382,19 +389,10 @@
                                 </form>
                             </div>
                         </td>
-                        
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-        
-        
-        
-
-        <div class="chart-container">
-            <h2>Expenses Chart</h2>
-            <canvas id="expenseChart"></canvas>
         </div>
     </div>
 

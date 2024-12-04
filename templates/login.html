@@ -88,13 +88,13 @@
 <body>
     <div class="login-container">
         <h1>Login</h1>
-        <form method="POST">
-            <label for="username">Username</label>
-            <input type="text" name="username" id="username" required>
-
-            <label for="password">Password</label>
-            <input type="password" name="password" id="password" required>
-
+        <form method="POST" action="{{ url_for('login') }}">
+            <label for="username">Username:</label>
+            <input type="text" name="username" id="username" required><br>
+        
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required><br>
+        
             <button type="submit">Login</button>
         </form>
         <p>Don't have an account? <a href="{{ url_for('sign_up') }}">Sign up here</a></p>

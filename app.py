@@ -1,12 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
+from datetime import datetime
 from flask import flash
-from models import db, Transaction, User
+from models import db, Transactions, User
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:/Users/balaj/Downloads/Best/PersonalBudgetTracker-main/instance/budget_tracker.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///D:/Financial_Management_System/instance/finance_tracker.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SECRET_KEY'] = '3cdb21726265fc1194f5e0cc73a529112cc0477f2bc015e3'  # Used for session management
 
@@ -26,7 +27,7 @@ def index():
     if 'user_id' in session:  # Check if the user is logged in
         # Fetch transactions for the logged-in user
         user_id = session['user_id']
-        transactions = Transaction.query.all()  
+        transactions = Transactions.query.all()  
         return render_template('index.html', transactions=transactions)  # Show transactions page
     else:
         return render_template('landing.html')  # Show landing page if not logged in
@@ -121,7 +122,7 @@ def add_transaction():
             user_id = session['user_id']
 
             # Create a new transaction object
-            new_transaction = Transaction(
+            new_transaction = Transactions(
                 # user_id=user_id,  # Associate with the logged-in user
                 date=date,
                 type=type_,
@@ -148,33 +149,51 @@ def add_transaction():
 
 # Summary route
 from flask import render_template
-from models import db, Transaction
+from models import db, Transactions
 
 @app.route('/summary')
 def summary():
     # Fetch the sum of income and expenses by category
-    category_expenses = db.session.query(Transaction.category, db.func.sum(Transaction.amount).label('total_amount'))\
-        .filter(Transaction.type == 'Expense')\
-        .group_by(Transaction.category).all()
+    category_expenses = db.session.query(Transactions.category, db.func.sum(Transactions.amount).label('total_amount'))\
+        .filter(Transactions.type == 'Expense')\
+        .group_by(Transactions.category).all()
 
     # Fetch the total income
-    total_income = db.session.query(db.func.sum(Transaction.amount).label('total_income'))\
-        .filter(Transaction.type == 'Income').scalar() or 0  # If no income, set it to 0
+    total_income_transactions = db.session.query(db.func.sum(Transactions.amount).label('total_income'))\
+        .filter(Transactions.type == 'Income').scalar() or 0  # If no income, set it to 0
+
+    # Fetch the monthly salary from the session
+    monthly_salary = session.get('monthly_salary', 0)  # Default to 0 if not set
+
+    # Add monthly salary to the total income from transactions
+    total_income = monthly_salary + total_income_transactions
 
     # Prepare the data for categories and their corresponding totals
     categories = [expense.category for expense in category_expenses]
     amounts = [expense.total_amount for expense in category_expenses]
 
-    # Prepare the data for pie chart (or any other chart)
+    # Prepare the data for Pie and Bar charts (or any other chart)
     chart_data = {
-        'labels': categories,
-        'datasets': [{
-            'label': 'Expenses',
-            'data': amounts,
-            'backgroundColor': ['#27ae60', '#3498db', '#f39c12', '#e74c3c', '#9b59b6'],
-            'borderColor': '#2c3e50',
-            'borderWidth': 1
-        }]
+        'pie': {
+            'labels': categories,
+            'datasets': [{
+                'label': 'Expenses',
+                'data': amounts,
+                'backgroundColor': ['#27ae60', '#3498db', '#f39c12', '#e74c3c', '#9b59b6'],
+                'borderColor': '#2c3e50',
+                'borderWidth': 1
+            }]
+        },
+        'bar': {
+            'labels': categories,
+            'datasets': [{
+                'label': 'Expenses',
+                'data': amounts,
+                'backgroundColor': '#1abc9c',
+                'borderColor': '#16a085',
+                'borderWidth': 1
+            }]
+        }
     }
 
     # Prepare the data for remaining budget and other calculations
@@ -190,11 +209,13 @@ def summary():
                            remaining_budget=remaining_budget)
 
 
+
+
 @app.route('/delete/<int:transaction_id>', methods=['POST'])
 def delete_transaction(transaction_id):
     try:
         # Find the transaction by ID
-        transaction = Transaction.query.get(transaction_id)
+        transaction = Transactions.query.get(transaction_id)
         if transaction:
             db.session.delete(transaction)
             db.session.commit()
@@ -209,7 +230,7 @@ def delete_transaction(transaction_id):
 @app.route('/edit/<int:transaction_id>', methods=['GET', 'POST'])
 def edit_transaction(transaction_id):
     # Find the transaction
-    transaction = Transaction.query.get(transaction_id)
+    transaction = Transactions.query.get(transaction_id)
     if not transaction:
         flash("Transaction not found.")
         return redirect(url_for('index'))
@@ -236,15 +257,20 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
+
+        # Query the user by username from the 'users_new' table
         user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
+
+        if user and check_password_hash(user.password, password):  # Verify hashed password
             session['user_id'] = user.id  # Store user ID in session
+            flash("Login successful!")
             return redirect(url_for('index'))  # Redirect to home page after login
-        
-        return 'Invalid credentials. Please try again.'
-    
+        else:
+            flash("Invalid username or password.")
+            return render_template('login.html')  # Show login page again if credentials are incorrect
+
     return render_template('login.html')
+
 
 from flask import render_template, request, redirect, url_for
 from werkzeug.security import generate_password_hash
@@ -260,21 +286,37 @@ def sign_up():
         email = request.form['email']
         phone = request.form['phone']
         company = request.form['company']
-        dob = request.form['dob']
+        dob = request.form['dob']  # Directly get the text input
         password = request.form['password']
-        
-        # Hash the password for security
+
+        # Hash the password
         hashed_password = generate_password_hash(password)
 
-        # Create a new user and store it in the database
-        new_user = User(first_name=first_name, last_name=last_name, username=username,
-                        email=email, phone=phone, company=company, dob=dob, password=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
+        # Create a new user object
+        new_user = User(
+            first_name=first_name,
+            last_name=last_name,
+            username=username,
+            email=email,
+            phone=phone,
+            company=company,
+            dob=dob,  # Store as plain text
+            password=hashed_password
+        )
 
-        return redirect(url_for('login'))  # Redirect to login page after successful sign-up
+        try:
+            # Add the user to the database
+            db.session.add(new_user)
+            db.session.commit()
+            flash("Account created successfully. Please log in.")
+            return redirect(url_for('login'))
+        except Exception as e:
+            print(f"Error while inserting user: {e}")
+            flash("An error occurred while creating your account.")
+            return render_template('sign_up.html')
 
     return render_template('sign_up.html')
+
 
 
 
