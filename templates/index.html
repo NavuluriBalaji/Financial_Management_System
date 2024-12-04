@@ -208,8 +208,10 @@
         <a href="{{ url_for('index') }}">Home</a>
         <a href="{{ url_for('add_transaction') }}">Add Transaction</a>
         <a href="{{ url_for('summary') }}">View Summary</a>
+        <a href="{{ url_for('profile') }}">Profile</a> <!-- Profile link -->
         <a href="{{ url_for('logout') }}">Logout</a>
     </nav>
+    
 
     <div class="container">
         <div class="welcome-message">
@@ -390,10 +392,15 @@
                             </div>
                         </td>
                     </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 15px;">No transactions found</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        
     </div>
 
     <script>

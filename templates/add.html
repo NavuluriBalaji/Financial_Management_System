@@ -113,7 +113,7 @@
         <a href="/transaction-table" class="btn-transaction" id="view-transactions-btn">Check Transaction Table</a>
     </div>
     
-    <form method="POST">
+    <form method="POST" action="{{ url_for('add_transaction') }}">
         <label for="date">Date</label>
         <input type="date" name="date" id="date" required><br>
 

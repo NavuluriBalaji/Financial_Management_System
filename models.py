@@ -2,30 +2,30 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-class Transactions(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.String(80), nullable=False)
-    type = db.Column(db.String(10), nullable=False)  # 'Income' or 'Expense'
-    category = db.Column(db.String(100), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    description = db.Column(db.String(200), nullable=True)
-
-    def __repr__(self):
-        return f'<Transactions {self.category} - {self.amount}>'
-
 class User(db.Model):
-    __tablename__ = 'users_new'  # Update the table name to 'users_new'
-
+    __tablename__ = 'users_new'  # Ensure the table name matches your DB table
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(80), nullable=False)
-    last_name = db.Column(db.String(80), nullable=False)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    phone = db.Column(db.String(15), nullable=True)
-    company = db.Column(db.String(120), nullable=True)
-    dob = db.Column(db.String(80), nullable=True)  # Store as text if needed
-    password = db.Column(db.String(200), nullable=False)
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    username = db.Column(db.String(100), unique=True)
+    email = db.Column(db.String(100), unique=True)
+    phone = db.Column(db.String(20))
+    company = db.Column(db.String(100))
+    dob = db.Column(db.String(20))
+    password = db.Column(db.String(100))
+    
+    # Relationship: A user can have many transactions
+    transactions = db.relationship('Transactions', back_populates='user')
 
-
-    def __repr__(self):
-        return f'<User {self.username}>'
+class Transactions(db.Model):
+    __tablename__ = 'transactions'  # Ensure the table name matches your DB table
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.String(10), nullable=False)
+    type = db.Column(db.String(10), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(200))
+    user_id = db.Column(db.Integer, db.ForeignKey('users_new.id'), nullable=False)  # Foreign key to User
+    
+    # Relationship: A transaction belongs to a user
+    user = db.relationship('User', back_populates='transactions')

@@ -21,16 +21,17 @@ def create_tables():
 def landing():
     return render_template('landing.html')
 
-# Home route (Index page)
-@app.route('/index',methods=['GET'])
+@app.route('/index', methods=['GET'])
 def index():
     if 'user_id' in session:  # Check if the user is logged in
         # Fetch transactions for the logged-in user
         user_id = session['user_id']
-        transactions = Transactions.query.all()  
+        transactions = Transactions.query.filter_by(user_id=user_id).all()  # Fetch only the transactions for the logged-in user
         return render_template('index.html', transactions=transactions)  # Show transactions page
     else:
         return render_template('landing.html')  # Show landing page if not logged in
+
+
     
 from flask import render_template, request, redirect, url_for, session
 
@@ -86,64 +87,94 @@ def get_all_transactions():
     conn.close()
     return transactions
 
-# Route for the transaction table
-@app.route('/transaction-table')
-def transaction_table():
-    # transactions = get_all_transactions()  # Fetch all transactions
-    return render_template('index.html')
-
-# Add Transaction
-@app.route('/add', methods=['GET', 'POST'])
+@app.route('/add_transaction', methods=['GET', 'POST'])
 def add_transaction():
     if request.method == 'POST':
         try:
-            # Retrieve form data
+            # Get form data
             date = request.form.get('date')
-            type_ = request.form.get('type')
+            transaction_type = request.form.get('type')
             category = request.form.get('category')
             amount = request.form.get('amount')
             description = request.form.get('description')
 
-            # Validate required fields
-            if not (date and type_ and category and amount):
-                return 'All fields are required', 400
+            # Validate the form data
+            if not date or not transaction_type or not category or not amount:
+                flash('All fields are required!')
+                return redirect(url_for('add_transaction'))
 
-            # Ensure the amount is a valid float
-            try:
-                amount = float(amount)
-            except ValueError:
-                return 'Amount must be a number', 400
+            # Process the data (Convert to proper types if necessary)
+            amount = float(amount)  # Ensure it's a float
 
-            # Ensure the user is logged in
-            if 'user_id' not in session:
-                return redirect(url_for('login'))
+            # Assuming you're storing the user ID in the session
+            user_id = session['user_id']  # Ensure that the user is logged in and has a valid user_id
 
-            # Get the logged-in user's ID
-            user_id = session['user_id']
-
-            # Create a new transaction object
+            # Create a new transaction
             new_transaction = Transactions(
-                # user_id=user_id,  # Associate with the logged-in user
+                user_id=user_id,
                 date=date,
-                type=type_,
+                type=transaction_type,
                 category=category,
                 amount=amount,
                 description=description
             )
 
-            # Add and commit the transaction to the database
+            # Save to the database
             db.session.add(new_transaction)
             db.session.commit()
 
-            # Redirect to the index page after success
-            return redirect(url_for('index'))
+            flash('Transaction added successfully!')
+            return redirect(url_for('index'))  # Redirect back to the index page to see the updated list of transactions
 
         except Exception as e:
-            print(f"Error while adding transaction: {e}")
-            return 'An error occurred while adding the transaction', 500
+            flash(f'Error adding transaction: {e}')
+            return redirect(url_for('add_transaction'))
 
-    # Render the form if the request method is GET
+    # If GET request, render the form
     return render_template('add.html')
+
+@app.route('/profile', methods=['GET'])
+def profile():
+    if 'user_id' not in session:
+        # If user is not logged in, redirect to the login page
+        return redirect(url_for('login'))
+    
+    # Fetch the user from the database
+    user = User.query.get(session['user_id'])  # Get the user from the session ID
+    
+    if not user:
+        # If no user is found with the given ID, redirect to login
+        return redirect(url_for('login'))
+
+    # Render the profile page with user data
+    return render_template('profile.html', user=user)
+
+@app.route('/edit_profile', methods=['GET', 'POST'])
+def edit_profile():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # If the user isn't logged in, redirect to login page
+
+    user = User.query.get(session['user_id'])  # Fetch the user based on the session
+
+    if request.method == 'POST':
+        # Update the user's profile with new data
+        user.first_name = request.form['first_name']
+        user.last_name = request.form['last_name']
+        user.email = request.form['email']
+        user.phone = request.form['phone']
+        user.company = request.form['company']
+        user.dob = request.form['dob']
+        
+        try:
+            # Commit the changes to the database
+            db.session.commit()
+            flash("Profile updated successfully!", "success")
+            return redirect(url_for('profile'))  # Redirect to the profile page after successful update
+        except Exception as e:
+            flash(f"Error updating profile: {e}", "error")
+            return redirect(url_for('edit_profile'))  # Stay on the edit page if error occurs
+
+    return render_template('edit_profile.html', user=user)  # Pass the current user data to the template
 
 
 
@@ -208,9 +239,6 @@ def summary():
                            total_expenses=total_expenses,
                            remaining_budget=remaining_budget)
 
-
-
-
 @app.route('/delete/<int:transaction_id>', methods=['POST'])
 def delete_transaction(transaction_id):
     try:
@@ -257,19 +285,16 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
-        # Query the user by username from the 'users_new' table
+        
         user = User.query.filter_by(username=username).first()
-
-        if user and check_password_hash(user.password, password):  # Verify hashed password
+        if user and check_password_hash(user.password, password):
             session['user_id'] = user.id  # Store user ID in session
-            flash("Login successful!")
             return redirect(url_for('index'))  # Redirect to home page after login
-        else:
-            flash("Invalid username or password.")
-            return render_template('login.html')  # Show login page again if credentials are incorrect
-
+        
+        return 'Invalid credentials. Please try again.'
+    
     return render_template('login.html')
+
 
 
 from flask import render_template, request, redirect, url_for
