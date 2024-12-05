@@ -162,17 +162,29 @@ from models import db, Transactions
 
 @app.route('/summary')
 def summary():
+    # Ensure that the user is logged in
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Fetch the logged-in user's ID from the session
+    user_id = session['user_id']
+
+    # Fetch the sum of income and expenses by category for the logged-in user
     category_expenses = db.session.query(Transactions.category, db.func.sum(Transactions.amount).label('total_amount'))\
-        .filter(Transactions.type == 'Expense')\
+        .filter(Transactions.type == 'Expense', Transactions.user_id == user_id)  \
         .group_by(Transactions.category).all()
 
+    # Fetch the total income for the logged-in user
     total_income_transactions = db.session.query(db.func.sum(Transactions.amount).label('total_income'))\
-        .filter(Transactions.type == 'Income').scalar() or 0  
+        .filter(Transactions.type == 'Income', Transactions.user_id == user_id).scalar() or 0  
 
+    # Get the user's monthly salary from session
     monthly_salary = session.get('monthly_salary', 0) 
 
+    # Calculate total income (monthly salary + income from transactions)
     total_income = monthly_salary + total_income_transactions
 
+    # Prepare the data for chart (pie and bar chart)
     categories = [expense.category for expense in category_expenses]
     amounts = [expense.total_amount for expense in category_expenses]
 
@@ -202,12 +214,14 @@ def summary():
     total_expenses = sum(amounts)
     remaining_budget = total_income - total_expenses
 
+    # Render the template with the data
     return render_template('summary.html', 
                            category_expenses=category_expenses,
                            chart_data=chart_data,
                            total_income=total_income,
                            total_expenses=total_expenses,
                            remaining_budget=remaining_budget)
+
 
 @app.route('/delete/<int:transaction_id>', methods=['POST'])
 def delete_transaction(transaction_id):
