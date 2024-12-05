@@ -5,14 +5,14 @@ from flask import flash
 from models import db, Transactions, User
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# app = Flask(__name__)
+app = Flask(__name__)
 from flask import Flask
 
-app = Flask(
-    __name__,
-    template_folder="../templates",  # Adjust path to the templates folder
-    static_folder="../static"       # Adjust path to the static folder
-)
+# app = Flask(
+#     __name__,
+#     template_folder="../templates",  # Adjust path to the templates folder
+#     static_folder="../static"       # Adjust path to the static folder
+# )
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///D:/Financial_Management_System/instance/finance_tracker.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
