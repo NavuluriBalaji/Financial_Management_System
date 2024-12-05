@@ -2,12 +2,10 @@ import sqlite3
 from datetime import datetime
 import os
 
-# Set up database connection
 def create_connection():
     conn = sqlite3.connect(os.path.join('instance', 'budget_tracker.db'))
     return conn
 
-# Create tables for users and transactions
 def create_tables():
     conn = create_connection()
     cursor = conn.cursor()
@@ -26,7 +24,6 @@ def create_tables():
     conn.commit()
     conn.close()
 
-# User Registration
 def register_user(username, password):
     conn = create_connection()
     cursor = conn.cursor()
@@ -37,7 +34,6 @@ def register_user(username, password):
         print("Username already exists.")
     conn.close()
 
-# User Authentication
 def authenticate_user(username, password):
     conn = create_connection()
     cursor = conn.cursor()
@@ -46,7 +42,6 @@ def authenticate_user(username, password):
     conn.close()
     return user
 
-# Add Transaction (Income or Expense)
 def add_transaction(user_id, category, amount, transaction_type):
     conn = create_connection()
     cursor = conn.cursor()
@@ -55,7 +50,6 @@ def add_transaction(user_id, category, amount, transaction_type):
     conn.commit()
     conn.close()
 
-# Generate Financial Reports (Monthly/Yearly)
 def generate_report(user_id, period='monthly'):
     conn = create_connection()
     cursor = conn.cursor()

@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 class User(db.Model):
-    __tablename__ = 'users_new'  # Ensure the table name matches your DB table
+    __tablename__ = 'users_new' 
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
@@ -13,19 +13,17 @@ class User(db.Model):
     company = db.Column(db.String(100))
     dob = db.Column(db.String(20))
     password = db.Column(db.String(100))
-    
-    # Relationship: A user can have many transactions
+
     transactions = db.relationship('Transactions', back_populates='user')
 
 class Transactions(db.Model):
-    __tablename__ = 'transactions'  # Ensure the table name matches your DB table
+    __tablename__ = 'transactions' 
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.String(10), nullable=False)
     type = db.Column(db.String(10), nullable=False)
     category = db.Column(db.String(50), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200))
-    user_id = db.Column(db.Integer, db.ForeignKey('users_new.id'), nullable=False)  # Foreign key to User
+    user_id = db.Column(db.Integer, db.ForeignKey('users_new.id'), nullable=False)
     
-    # Relationship: A transaction belongs to a user
     user = db.relationship('User', back_populates='transactions')
