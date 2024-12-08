@@ -16,7 +16,7 @@ from flask import Flask
 # )
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, "instance", 'finance_tracker.db')}
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'finance_tracker.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SECRET_KEY'] = '3cdb21726265fc1194f5e0cc73a529112cc0477f2bc015e3'
 
