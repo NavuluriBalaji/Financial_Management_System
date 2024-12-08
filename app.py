@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import flash
 from models import db, Transactions, User
 from werkzeug.security import generate_password_hash, check_password_hash
+import os
 
 app = Flask(__name__)
 from flask import Flask
@@ -14,7 +15,8 @@ from flask import Flask
 #     static_folder="../static"       # Adjust path to the static folder
 # )
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///D:/Financial_Management_System/instance/finance_tracker.db'
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, "instance", 'finance_tracker.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SECRET_KEY'] = '3cdb21726265fc1194f5e0cc73a529112cc0477f2bc015e3'
 
@@ -336,4 +338,6 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
+    import init_db
+    
     app.run(debug=True)
