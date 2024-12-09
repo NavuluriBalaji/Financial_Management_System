@@ -5,6 +5,7 @@ from flask import flash
 from models import db, Transactions, User, UserBudget
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+import pandas as pd
 
 app = Flask(__name__)
 from flask import Flask
