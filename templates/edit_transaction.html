@@ -123,12 +123,17 @@
         <form method="POST">
             <!-- Flash messages for success or errors -->
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
+            {% if messages %}
+                <div id="flash-messages">
                     {% for category, message in messages %}
-                        <div class="alert">{{ message }}</div>
+                        <div class="alert alert-{{ category }}" style="margin-bottom: 20px; padding: 15px; border-radius: 5px; color: white;">
+                            {{ message }}
+                        </div>
                     {% endfor %}
-                {% endif %}
-            {% endwith %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
 
             <!-- Date -->
             <div class="form-group">

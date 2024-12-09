@@ -360,25 +360,98 @@ def delete_transaction(transaction_id):
 
 @app.route('/edit/<int:transaction_id>', methods=['GET', 'POST'])
 def edit_transaction(transaction_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # Ensure the user is logged in
+
+    user_id = session['user_id']  # Get the logged-in user's ID
     transaction = Transactions.query.get(transaction_id)
-    if not transaction:
+
+    if not transaction or transaction.user_id != user_id:
         flash("Transaction not found.")
         return redirect(url_for('index'))
 
+    # Retrieve user's budgets from the database
+    user_budget = UserBudget.query.filter_by(user_id=user_id).first()
+
+    if not user_budget:
+        flash("No budget defined for this user. Please set a budget first.", "danger")
+        return redirect(url_for('index'))
+
+    # Convert the budget to a dictionary for easy access
+    category_budgets = {
+        'food': user_budget.food,
+        'transport': user_budget.transport,
+        'entertainment': user_budget.entertainment,
+        'bills': user_budget.bills,
+        'other': user_budget.other,
+    }
+
     if request.method == 'POST':
         try:
-            transaction.date = request.form['date']
-            transaction.type = request.form['type']
-            transaction.category = request.form['category']
-            transaction.amount = float(request.form['amount'])
-            transaction.description = request.form['description']
+            # Get the updated values
+            updated_date = request.form['date']
+            updated_type = request.form['type']
+            updated_category = request.form['category']
+            updated_amount = float(request.form['amount'])
+            updated_description = request.form['description']
+
+            # Validate the budget
+            category_budget = category_budgets.get(updated_category.lower(), None)
+            if category_budget is None:
+                flash(f"No budget is defined for the category '{updated_category}'.", "danger")
+                return render_template('edit_transaction.html', transaction=transaction)
+
+            # Calculate total expenses for the category (excluding the current transaction)
+            total_category_expenses = db.session.query(db.func.sum(Transactions.amount)).filter(
+                Transactions.user_id == user_id,
+                Transactions.type == 'Expense',
+                Transactions.category == updated_category,
+                Transactions.id != transaction_id  # Exclude the current transaction
+            ).scalar() or 0
+
+            # Check if the updated transaction exceeds the category budget
+            if updated_type == 'Expense' and (total_category_expenses + updated_amount) > category_budget:
+                flash(
+                    f"Error: Updating this transaction will exceed the budget for '{updated_category}'. "
+                    f"Budget: {category_budget}, Spent: {total_category_expenses}.",
+                    "danger"
+                )
+                return render_template('edit_transaction.html', transaction=transaction)
+
+            # Calculate total expenses across all categories (excluding the current transaction)
+            total_expenses = db.session.query(db.func.sum(Transactions.amount)).filter(
+                Transactions.user_id == user_id,
+                Transactions.type == 'Expense',
+                Transactions.id != transaction_id  # Exclude the current transaction
+            ).scalar() or 0
+
+            # Check if the updated transaction exceeds the overall budget
+            monthly_salary = session.get('monthly_salary', 0)
+            if updated_type == 'Expense' and (total_expenses + updated_amount) > monthly_salary:
+                flash(
+                    f"Error: Updating this transaction will exceed your overall budget. "
+                    f"Monthly Salary: {monthly_salary}, Spent: {total_expenses}.",
+                    "danger"
+                )
+                return render_template('edit_transaction.html', transaction=transaction)
+
+            # Update the transaction
+            transaction.date = updated_date
+            transaction.type = updated_type
+            transaction.category = updated_category
+            transaction.amount = updated_amount
+            transaction.description = updated_description
             db.session.commit()
-            flash("Transaction updated successfully.")
+
+            flash("Transaction updated successfully.", "success")
             return redirect(url_for('index'))
+
         except Exception as e:
             print(f"Error updating transaction: {e}")
-            flash("An error occurred while updating the transaction.")
+            flash("An error occurred while updating the transaction.", "danger")
+
     return render_template('edit_transaction.html', transaction=transaction)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
