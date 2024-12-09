@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
 from datetime import datetime
 from flask import flash
-from models import db, Transactions, User
+from models import db, Transactions, User, UserBudget
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
@@ -45,8 +45,14 @@ from flask import render_template, request, redirect, url_for, session
 
 @app.route('/set_category_budget', methods=['POST'])
 def set_category_budget():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # Ensure the user is logged in
+
+    user_id = session['user_id']  # Get the logged-in user's ID
+
     if request.method == 'POST':
         try:
+            # Retrieve budget values from the form
             monthly_salary = float(request.form.get('monthly_salary', 0))
             food_budget = float(request.form.get('food_budget', 0))
             transport_budget = float(request.form.get('transport_budget', 0))
@@ -54,9 +60,37 @@ def set_category_budget():
             bills_budget = float(request.form.get('bills_budget', 0))
             other_budget = float(request.form.get('other_budget', 0))
 
+            # Validate input values
             if monthly_salary < 0 or food_budget < 0 or transport_budget < 0 or entertainment_budget < 0 or bills_budget < 0 or other_budget < 0:
-                return "Budget values cannot be negative.", 400
+                flash("Budget values cannot be negative.", "danger")
+                return redirect(url_for('index'))
 
+            # Check if the user already has a budget in the database
+            existing_budget = UserBudget.query.filter_by(user_id=user_id).first()
+
+            if existing_budget:
+                # Update the existing budget
+                existing_budget.food = food_budget
+                existing_budget.transport = transport_budget
+                existing_budget.entertainment = entertainment_budget
+                existing_budget.bills = bills_budget
+                existing_budget.other = other_budget
+            else:
+                # Create a new budget entry
+                new_budget = UserBudget(
+                    user_id=user_id,
+                    food=food_budget,
+                    transport=transport_budget,
+                    entertainment=entertainment_budget,
+                    bills=bills_budget,
+                    other=other_budget
+                )
+                db.session.add(new_budget)
+
+            # Commit changes to the database
+            db.session.commit()
+
+            # Update session values
             session['monthly_salary'] = monthly_salary
             session['user_budgets'] = {
                 'food': food_budget,
@@ -66,14 +100,13 @@ def set_category_budget():
                 'other': other_budget
             }
 
-            total_budget = food_budget + transport_budget + entertainment_budget + bills_budget + other_budget
-            remaining_budget = monthly_salary - total_budget
-            session['remaining_budget'] = remaining_budget 
-
+            flash("Budget has been set successfully!", "success")
             return redirect(url_for('index'))
 
         except ValueError:
-            return "Invalid input. Please ensure all fields contain valid numbers.", 400
+            flash("Invalid input. Please ensure all fields contain valid numbers.", "danger")
+            return redirect(url_for('index'))
+
 
 
 
@@ -89,44 +122,122 @@ def get_all_transactions():
     conn.close()
     return transactions
 
+
+
+
 @app.route('/add_transaction', methods=['GET', 'POST'])
 def add_transaction():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    user_budgets_record = UserBudget.query.filter_by(user_id=user_id).first()
+    user_budgets = {}
+    if user_budgets_record:
+        # Convert the UserBudget object to a dictionary
+        user_budgets = {
+            'food': user_budgets_record.food,
+            'transport': user_budgets_record.transport,
+            'entertainment': user_budgets_record.entertainment,
+            'bills': user_budgets_record.bills,
+            'other': user_budgets_record.other,
+        }
+
     if request.method == 'POST':
         try:
-            date = request.form.get('date')
-            transaction_type = request.form.get('type')
-            category = request.form.get('category')
-            amount = request.form.get('amount')
-            description = request.form.get('description')
+            # Retrieve form data
+            date = request.form['date']
+            type_ = request.form['type']
+            category = request.form['category']
+            amount = float(request.form['amount'])
+            description = request.form.get('description', '')
 
-            if not date or not transaction_type or not category or not amount:
-                flash('All fields are required!')
-                return redirect(url_for('add_transaction'))
+            # Check if a budget exists for the selected category
+            category_budget = user_budgets.get(category)
+            if category_budget is None:
+                flash(f"No budget is defined for the category '{category}'. Please set it before adding transactions.", "danger")
+                return render_template('add.html', user_budgets=user_budgets)
 
-            amount = float(amount) 
+            # Calculate total category expenses
+            total_category_expenses = db.session.query(db.func.sum(Transactions.amount)).filter(
+                Transactions.user_id == user_id,
+                Transactions.type == 'Expense',
+                Transactions.category == category
+            ).scalar() or 0
 
-            user_id = session['user_id'] 
+            # Check if the transaction exceeds the category budget
+            if type_ == 'Expense' and (total_category_expenses + amount) > category_budget:
+                flash(f"Error: Adding this transaction exceeds the budget for '{category}'! Budget: ₹{category_budget}, Spent: ₹{total_category_expenses}.", "danger")
+                return render_template('add.html', user_budgets=user_budgets)
 
-            new_transaction = Transactions(
+            # Add the transaction to the database
+            transaction = Transactions(
                 user_id=user_id,
                 date=date,
-                type=transaction_type,
+                type=type_,
                 category=category,
                 amount=amount,
                 description=description
             )
-
-            db.session.add(new_transaction)
+            db.session.add(transaction)
             db.session.commit()
 
-            flash('Transaction added successfully!')
-            return redirect(url_for('index')) 
+            flash("Transaction added successfully!", "success")
+            return redirect(url_for('index'))
 
         except Exception as e:
-            flash(f'Error adding transaction: {e}')
-            return redirect(url_for('add_transaction'))
+            flash(f"Error adding transaction: {e}", "danger")
+            return render_template('add.html', user_budgets=user_budgets)
 
-    return render_template('add.html')
+    return render_template('add.html', user_budgets=user_budgets)
+
+
+
+import pandas as pd
+from flask import send_file, session, flash, redirect, url_for
+from io import BytesIO
+
+@app.route('/download_transactions')
+def download_transactions():
+    # Ensure the user is logged in
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    username = session.get('username', 'user')  # Get username from session, default to 'user'
+
+    # Fetch the user's transactions from the database
+    transactions = Transactions.query.filter_by(user_id=user_id).all()
+
+    # Convert the transactions data to a list of dictionaries
+    transaction_data = []
+    for transaction in transactions:
+        transaction_data.append({
+            'Date': transaction.date,
+            'Type': transaction.type,
+            'Category': transaction.category,
+            'Amount': transaction.amount,
+            'Description': transaction.description
+        })
+
+    # Create a Pandas DataFrame
+    df = pd.DataFrame(transaction_data)
+
+    # Create a BytesIO object to store the Excel file
+    output = BytesIO()
+
+    # Write the DataFrame to the BytesIO object as an Excel file
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Transactions')
+
+    # Save the Excel file
+    output.seek(0)
+
+    # Set the filename to the username followed by _transactions.xlsx
+    filename = f"{username}_transactions.xlsx"
+
+    # Send the file as a response for download
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 @app.route('/profile', methods=['GET'])
 def profile():

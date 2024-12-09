@@ -74,7 +74,8 @@
     </header>
 
     <div class="container">
-        <h2>Profile Information</h2>
+        <h2>Welcome, {{ user.first_name }}!</h2>
+        <p>Your monthly budget is: ₹{{ user.monthly_budget }}</p>
 
         <!-- User Info -->
         <div class="profile-item">
