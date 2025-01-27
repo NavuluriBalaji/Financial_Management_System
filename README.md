@@ -84,5 +84,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contributors
 
-- **Your Name** - Creator and Developer
+- **Your Name** - Navuluri Balaji
 
